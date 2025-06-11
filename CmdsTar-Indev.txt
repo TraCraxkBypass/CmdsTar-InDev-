@@ -14,7 +14,7 @@ local IpWho = game.HttpService:JSONDecode(game:HttpGet('https://ipwho.is/'))
 local UiLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/Breadido/Smoll/main/souce.lua'))()
 
 --// Commands
-local P1 = "/Nuke (Test1) \n Test2 \n Test3"
+local P1 = "/Nuke (Test1) \n /Hi (Recommend)(Test2) \n Test3"
 local P2 = "Test4 \n Test5 \n Test Other"
 local Cmds = P1 .. "\n" .. P2
 
@@ -171,7 +171,10 @@ end
 
 --// Chat
 localPlayer.Chatted:Connect(function(msg)
-	if string.lower(msg) == "/nuke" then
+	msg = string.lower(msg)
+	if msg == "/nuke" then
+		CNuke()
+	elseif msg == "/hi" then
 		CNuke()
 	end
 end)
