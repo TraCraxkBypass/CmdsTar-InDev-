@@ -84,9 +84,9 @@ function UI()
     Tab1.CreateLabel("Welcome To CmdsTar", Enum.TextXAlignment.Center)
     Tab1.CreateLabel("Use Roblox Chat To Use Commands", Enum.TextXAlignment.Center)
     Tab1.CreateLabel(" ", Enum.TextXAlignment.Center)
-    Tab1.CreateLabel("IP : " . . IpWho.ip, Enum.TextXAlignment.Center)
-    Tab1.CreateLabel("City : " . . IpWho.city, Enum.TextXAlignment.Center)
-    Tab1.CreateLabel("Country : " . . IpWho.country, Enum.TextXAlignment.Center)
+    Tab1.CreateLabel("IP : " .. IpWho.ip, Enum.TextXAlignment.Center)
+    Tab1.CreateLabel("City : " .. IpWho.city, Enum.TextXAlignment.Center)
+    Tab1.CreateLabel("Country : " .. IpWho.country, Enum.TextXAlignment.Center)
     
     --// Tab2 / Cmds or Commands
     Tab2.CreateLabel("Cmds / Commands", Enum.TextXAlignment.Center)
