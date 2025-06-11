@@ -3,178 +3,265 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
-local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 
---// IpWho
-local IpWho = game.HttpService:JSONDecode(game:HttpGet('https://ipwho.is/'))
-
---// UiLib
-local UiLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/Breadido/Smoll/main/souce.lua'))()
-
---// Commands
-local P1 = "/Nuke (Test1) \n /Hi (Recommend)(Test2) \n Test3"
-local P2 = "Test4 \n Test5 \n Test Other"
-local Cmds = P1 .. "\n" .. P2
-
 --// Variables
 local localPlayer = Players.LocalPlayer
+local mouse = localPlayer:GetMouse()
+local backpack = localPlayer:WaitForChild("Backpack")
+local oldIcon = mouse.Icon
+local equipped = false
 local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-local FoundRemote = nil
-local Remotes = {}
-local CheckTime = 0.5
-local UseSegway = false
-local Wordlist = {
-    "delete", "remove", "destroy", "clean", "clear",
-    "bala", "bullet", "shoot", "fire", "segway",
-    "deletar", "apagar"
-}
+
+local genv = getgenv and getgenv() or _G
+local foundRemote
+local remotes = {}
+local checkTime = 0.5
+local useSegway = false
+local wordList = {"delete", "remove", "destroy", "clean", "clear", "bala", "bullet", "shoot", "fire", "segway", "deletar", "apagar"}
 
 --// Notification
-function Notify(text, B1, B2)
-    if B1 and B2 then
-        StarterGui:SetCore("SendNotification", {
-            Title = "CmdsTar",
-            Text = text,
-            Duration = 5,
-            Button1 = "Yes",
-            Button2 = "No",
-            Callback = function(button)
-                if button == "Button1" then
-                    B1()
-                else
-                    B2()
-                end
-            end
-        })
-    else
-        StarterGui:SetCore("SendNotification", {
-            Title = "CmdsTar",
-            Text = text,
-            Duration = 5
-        })
-    end
+function Notif(text, title, duration)
+    local StarterGui = game:GetService("StarterGui")
+    StarterGui:SetCore("SendNotification", {
+        Title = title or "CmdsTar";
+        Text = text or "Text";
+        Duration = duration or 5;
+    })
 end
 
---// Build-In Ui
-function UI()
-	local Existing = PlayerGui:FindFirstChild("CmdsTar")
-	if Existing then
-		Existing:Destroy()
-	end
-
-    --// SetupUI
-	local Ui = UiLib.SetupUI({
-		Title = "CmdsTar"
-	})
-
-    --// Tabs
-	local Tab1 = Ui.CreateTabs({
-	    Text = "Welcome"
-    })
-	local Tab2 = Ui.CreateTabs({
-	    Text = "Cmds"
-    })
-	local Tab3 = Ui.CreateTabs({
-	    Text = "Credits"
-    })
-    
-    --// Tab1 / Welcome
-    Tab1.CreateLabel("Welcome To CmdsTar", Enum.TextXAlignment.Center)
-    Tab1.CreateLabel("Use Roblox Chat To Use Commands", Enum.TextXAlignment.Center)
-    Tab1.CreateLabel(" ", Enum.TextXAlignment.Center)
-    Tab1.CreateLabel("IP : " .. IpWho.ip, Enum.TextXAlignment.Center)
-    Tab1.CreateLabel("City : " .. IpWho.city, Enum.TextXAlignment.Center)
-    Tab1.CreateLabel("Country : " .. IpWho.country, Enum.TextXAlignment.Center)
-    
-    --// Tab2 / Cmds or Commands
-    Tab2.CreateLabel("Cmds / Commands", Enum.TextXAlignment.Center)
-    Tab2.CreateLabel(Cmds, Enum.TextXAlignment.Center)
-    
-    --// Tab3 / Credits
-    Tab3.CreateLabel("Credits", Enum.TextXAlignment.Center)
-    Tab3.CreateLabel("Creator", Enum.TextXAlignment.Center)
-    Tab3.CreateLabel("Nuzi (Creator)", Enum.TextXAlignment.Center)
-    Tab3.CreateLabel(" ", Enum.TextXAlignment.Center)
-    Tab3.CreateLabel("Tester", Enum.TextXAlignment.Center)
-    Tab3.CreateLabel("Nuzi (Creator)", Enum.TextXAlignment.Center)
-    Tab3.CreateLabel("Hykl / Intan", Enum.TextXAlignment.Center)
+--// Functions
+local function printTutorial()
+    print("\n========== CmdsTar Tutorial ==========")
+    print("How to Use")
+    print(" - To destroy any part, run: Destroy(part) or _G.Destroy(part)")
+    print(" - Example: Destroy(workspace.Part)")
+    print("")
+    print("Included Tools")
+    print(" - Destroy Tool: Remove objects easily.")
+    print(" - Gun Tool: Destroy players by clicking their character parts.")
+    print(" - Unweld Tool: Destroy welds and attachments from objects.")
+    print("")
+    print("Credits")
+    print("> Owner <")
+    print(" - By Nuzi")
+    print("> Tester <")
+    print(" - By Nuzi")
+    print(" - By IQoo_z9x")
+    print("====================================\n")
 end
 
---// Check if a RemoteEvent is the correct one
-local function CheckRemote(Remote)
-    if not Remote.Parent then return end
+local function checkRemote(remote)
+    if not remote.Parent then return end
 
-    local TestInstance = localPlayer:FindFirstChild("StarterGear") or localPlayer:WaitForChild("StarterGear", 1)
-    if not TestInstance then return end
+    local testInstance = localPlayer:FindFirstChild("StarterGear") or localPlayer:WaitForChild("StarterGear", 1)
+    if not testInstance then return end
 
     local success = pcall(function()
-        if Remote.Name == "DestroySegway" then
-            Remote:FireServer(TestInstance, {Value = TestInstance})
+        if remote.Name == "DestroySegway" then
+            remote:FireServer(testInstance, {Value = testInstance})
         else
-            Remote:FireServer(TestInstance)
+            remote:FireServer(testInstance)
         end
     end)
 
     RunService.Heartbeat:Wait()
-    task.wait(CheckTime + (localPlayer:GetNetworkPing() * 2))
+    task.wait(checkTime + (localPlayer:GetNetworkPing() * 2))
 
     if not localPlayer:FindFirstChild("StarterGear") then
-        FoundRemote = Remote
-        UseSegway = Remote.Name == "DestroySegway"
-        warn("[CmdsTar]: {Remote Found}", Remote:GetFullName())
-        Notify("[Remote Found]")
-        UI()
+        foundRemote = remote
+        genv.foundRemote = remote
+        useSegway = remote.Name == "DestroySegway"
+        warn("[Remote Found]:", remote:GetFullName())
+        Notif("Remote Found (/console to see toturial)", "CmdsTar", 5)
+        printTutorial()
     else
-        warn("[CmdsTar]: {Remote Not Found}")
-        Notify("[Remote Not Found]")
+        warn("[Remote Not Found]")
+        Notif("Remote Not Found", "CmdsTar", 5)
     end
 end
 
---// Scan through Instances to find potential Remotes
-local function Scan(Instance, SoftScan)
-    for _, v in ipairs(Instance:GetDescendants()) do
-        if FoundRemote then return end
-        if not v:IsA("RemoteEvent") or table.find(Remotes, v) then continue end
+local function scan(instance, softScan)
+    for _, v in ipairs(instance:GetDescendants()) do
+        if foundRemote then return end
+        if not v:IsA("RemoteEvent") or table.find(remotes, v) then continue end
+        table.insert(remotes, v)
 
-        table.insert(Remotes, v)
-
-        if SoftScan then
-            for _, word in ipairs(Wordlist) do
+        if softScan then
+            for _, word in ipairs(wordList) do
                 if v.Name:lower():find(word) then
-                    CheckRemote(v)
+                    checkRemote(v)
                     break
                 end
             end
         else
-            CheckRemote(v)
+            checkRemote(v)
         end
     end
 end
 
---// Function to Destroy a Target using the Found Remote
-local function Destroy(Target)
-    if not FoundRemote or not Target or Target == FoundRemote then return end
-    FoundRemote:FireServer(Target, UseSegway and {Value = Target} or nil)
+local function Destroy(target)
+    if not foundRemote or not target or target == foundRemote then return end
+    foundRemote:FireServer(target, useSegway and {Value = target} or nil)
 end
 
---// Commands
--- Nuke
-local function CNuke()
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") then
-			Destroy(obj)
-		end
-	end
+genv.Destroy = Destroy
+_G.Destroy = Destroy
+
+--// SelectionBox
+local selectionBox = Instance.new("SelectionBox")
+selectionBox.LineThickness = 1
+selectionBox.SurfaceTransparency = 0.5
+selectionBox.Parent = CoreGui
+
+--// Common Tool Template
+local function createTool(name, tooltip, textureId, activateFunc)
+    local tool = Instance.new("Tool")
+    tool.Name = name
+    tool.RequiresHandle = false
+    tool.ToolTip = tooltip
+    tool.TextureId = textureId
+    tool.CanBeDropped = false
+    tool.Parent = backpack
+
+    tool.Equipped:Connect(function()
+        equipped = true
+        mouse.Icon = textureId
+
+        local hue, hueMin, hueMax = 0.75, 0.70, 0.80
+        local hueDirection = 1
+
+        while equipped do
+            selectionBox.Adornee = mouse.Target or nil
+            selectionBox.Color3 = Color3.fromHSV(hue, 1, 1)
+
+            hue += (0.0015 * hueDirection)
+            if hue > hueMax then
+                hue = hueMax
+                hueDirection = -1
+            elseif hue < hueMin then
+                hue = hueMin
+                hueDirection = 1
+            end
+
+            RunService.RenderStepped:Wait()
+        end
+    end)
+
+    tool.Unequipped:Connect(function()
+        equipped = false
+        selectionBox.Adornee = nil
+        mouse.Icon = oldIcon
+    end)
+
+    tool.Activated:Connect(activateFunc)
 end
 
---// Chat
-localPlayer.Chatted:Connect(function(msg)
-	msg = string.lower(msg)
-	if msg == "/nuke" then
-		CNuke()
-	elseif msg == "/hi" then
-		CNuke()
-	end
+local function createDeleteTool()
+    createTool("Delete Tool", "Filtering Enabled Delete Tool (CmdsTar)", "rbxassetid://136573810404865", function()
+        if mouse.Target and mouse.Target:IsA("BasePart") then
+            if _G.Destroy then
+                _G.Destroy(mouse.Target)
+            end
+        end
+    end)
+end
+
+-- Function to create the gun
+local function createGunTool()
+    local gunTool = Instance.new("Tool")
+    gunTool.Name = "Gun Tool"
+    gunTool.RequiresHandle = false
+    gunTool.ToolTip = "Filtering Enabled Gun Tool (CmdsTar)"
+    gunTool.TextureId = "rbxassetid://99082963003623"
+    gunTool.CanBeDropped = false
+    gunTool.Parent = backpack
+
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(0.001, 0.001, 0.001)
+    handle.Transparency = 1
+    handle.CanCollide = false
+    handle.Massless = true
+    handle.Parent = gunTool
+
+    gunTool.Equipped:Connect(function()
+        equipped = true
+        oldIcon = mouse.Icon
+        mouse.Icon = "rbxassetid://99082963003623"
+
+        local hue, hueMin, hueMax = 0.75, 0.70, 0.80
+        local hueDirection = 1
+
+        while equipped do
+            selectionBox.Adornee = mouse.Target or nil
+            selectionBox.Color3 = Color3.fromHSV(hue, 1, 1)
+
+            hue += (0.0015 * hueDirection)
+            if hue > hueMax then
+                hue = hueMax
+                hueDirection = -1
+            elseif hue < hueMin then
+                hue = hueMin
+                hueDirection = 1
+            end
+
+            RunService.RenderStepped:Wait()
+        end
+    end)
+
+    gunTool.Unequipped:Connect(function()
+        equipped = false
+        selectionBox.Adornee = nil
+        mouse.Icon = oldIcon
+    end)
+
+    gunTool.Activated:Connect(function()
+        local target = mouse.Target
+        if not target then return end
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character and player.Character:IsAncestorOf(target) then
+                local head = player.Character:FindFirstChild("Head")
+                local root = player.Character:FindFirstChild("HumanoidRootPart")
+                if head then _G.Destroy(head) end
+                if root then _G.Destroy(root) end
+                break
+            end
+        end
+    end)
+end
+
+local function createWeldTool()
+    createTool("Unweld Tool", "Filtering Enabled Unweld Tool (CmdsTar)", "rbxassetid://130006833487208", function()
+        if mouse.Target then
+            for _, v in ipairs(mouse.Target:GetDescendants()) do
+                if v:IsA("Weld") or v:IsA("Attachment") then
+                    Destroy(v)
+                end
+            end
+        end
+    end)
+end
+
+--// Initialization
+local function spawnTools()
+    createDeleteTool()
+    createGunTool()
+    createWeldTool()
+end
+
+scan(ReplicatedStorage, true)
+if not foundRemote then scan(localPlayer:WaitForChild("PlayerGui"), true) end
+if not foundRemote then scan(Workspace, true) end
+if not foundRemote then
+    scan(ReplicatedStorage, false)
+    scan(Workspace, false)
+end
+
+spawnTools()
+
+localPlayer.CharacterAdded:Connect(function()
+    task.wait(3)
+    spawnTools()
 end)
